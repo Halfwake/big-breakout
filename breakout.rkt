@@ -16,8 +16,17 @@
   (-> ball? brick? boolean?)
   (match-define (ball (posn ball-x ball-y) _ _) a-ball)
   (match-define (brick (posn brick-x brick-y) _) a-brick)
-  (and (< brick-x ball-x (+ brick-x brick-width))
-       (< brick-y ball-y (+ brick-y brick-height))))
+  (and (<= brick-x ball-x (+ brick-x brick-width))
+       (<= brick-y ball-y (+ brick-y brick-height))))
+
+(module+ test
+  (require rackunit)
+  (check-true (ball-in-brick? (ball (posn 5 5)  #f #f)
+                              (brick (posn 0 0) #f)))
+  (check-true (ball-in-brick? (ball (posn 5 5) #f #f)
+                              (brick (posn 5 5) #f)))
+  (check-false (ball-in-brick? (ball (posn 5 5) #f #f)
+                               (brick (posn 6 6) #f))))
 
 (define paddle-width 128)
 (define paddle-height 32)
@@ -65,6 +74,14 @@
   (brick position (or (ball-in-brick? a-ball a-brick)
                       dead?)))
 
+(module+ test
+  (check-true (brick-dead? (update-brick (brick (posn 0 0) #f)
+                                         (ball (posn 1 1) #f #f))))
+  (check-true (brick-dead? (update-brick (brick (posn 2 2) #t)
+                                         (ball (posn 3 3) #f #f))))
+  (check-false (brick-dead? (update-brick (brick (posn 3 3) #f)
+                                          (ball (posn 2 2) #f #f)))))
+  
 
 ;; Updates all bricks and removes any that are
 ;; dead.
@@ -72,6 +89,15 @@
   (filter (negate brick-dead?)
           (for/list ([a-brick bricks])
             (update-brick a-brick a-ball))))
+
+(module+ test
+  (check-true (null? (update-bricks (list (brick (posn 0 0) #t)
+                                          (brick (posn 32 0) #t)
+                                          (brick (posn 65 0) #t))
+                                    (ball (posn 100 100) #f #f))))
+  (check-equal? 1 (length (update-bricks (list (brick (posn 0 0) #t)
+                                               (brick (posn 32 0) #f))
+                                         (ball (posn 100 100) #f #f)))))
 
 
 ;; TODO The ball only changes dy when it hits a brick. (But it looks fine! :D)
